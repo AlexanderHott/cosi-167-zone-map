@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
     // 1. ----------------------------- initialize zonemap and build -----------------------------
     // build zonemap
-    zonemap<int> zones(data, static_cast<uint>(data.size()) / 100);
+    zonemap<int> zones(data, static_cast<uint32_t>(data.size()) / 100);
     zones.build();
 
     // 2. ----------------------------- point queries -----------------------------
