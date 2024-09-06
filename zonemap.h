@@ -1,5 +1,5 @@
 #pragma once
-#include <iostream>
+
 #include <unordered_map>
 #include <vector>
 
@@ -15,8 +15,8 @@ template<typename T>
 class zonemap {
     std::vector<T> elements; // vector/list that will hold all elements. Can convert to array for faster processing
     std::vector<zone<T>> zones;
-    uint num_zones; // keeps track of the number of zones/partitions to the array/vector of elements
-    uint num_elements_per_zone;
+    uint num_zones{0}; // keeps track of the number of zones/partitions to the array/vector of elements
+    uint num_elements_per_zone{0};
     // keeps track of number of elements per zone (items in every zone has to be less than or equal to this counter)
 
 public:
@@ -56,4 +56,3 @@ public:
      */
     std::vector<T> query(T low, T high);
 };
-#endif
