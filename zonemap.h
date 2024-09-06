@@ -10,7 +10,7 @@ struct zone {
     std::vector<T> elements; // vector/list that holds elements in this zone
     T min; // minimum element in the zone
     T max; // maximum element in the zone
-    size_t size; // no. of elements in current zone
+    bool sorted;
 };
 
 template<typename T>

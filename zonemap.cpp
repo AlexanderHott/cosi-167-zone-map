@@ -14,7 +14,7 @@ void zonemap<T>::build() {
         auto min = *std::min_element(zoneElements.begin(), zoneElements.end());
         auto max = *std::max_element(zoneElements.begin(), zoneElements.end());
 
-        zone<T> zone{zoneElements, min, max, zoneElements.size()};
+        zone<T> zone{zoneElements, min, max};
         zones.push_back(zone);
     }
 }

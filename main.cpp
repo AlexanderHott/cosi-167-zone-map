@@ -4,8 +4,8 @@
 #include <functional>
 #include <iostream>
 #include <random>
-#include <set>
 #include <vector>
+
 #include "zonemap.cpp"
 #include "zonemap.h"
 
@@ -13,10 +13,16 @@
 std::string kInputDataPath = "./workloads/W1/workload.dat";
 std::string kPointQueriesPath = "./workloads/W1/point_queries.txt";
 std::string kRangeQueriesPath = "./workloads/W1/range_queries.txt";
-const uint32_t kRuns = 3;
-using namespace std;
+constexpr uint32_t kRuns = 3;
 
-void loadPointQueries(std::string &input_queries_path, std::vector<int> &queries) {
+using std::cout;
+using std::endl;
+using std::ios;
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::seconds;
+
+void loadPointQueries(const std::string &input_queries_path, std::vector<int> &queries) {
     queries.clear();
     std::ifstream infile(input_queries_path, ios::in);
     int tmp;
@@ -24,21 +30,21 @@ void loadPointQueries(std::string &input_queries_path, std::vector<int> &queries
         queries.push_back(tmp);
     }
     // shuffle indexes
-    std::random_shuffle(queries.begin(), queries.end());
+    std::shuffle(queries.begin(), queries.end(), std::mt19937(std::random_device()()));
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
     // read data
     std::ifstream ifs;
     std::vector<int> data;
 
     ifs.open(kInputDataPath, std::ios::binary);
     ifs.seekg(0, std::ios::end);
-    size_t filesize = ifs.tellg();
+    std::ifstream::pos_type filesize = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
 
     data.resize(filesize / sizeof(int));
-    ifs.read((char *) data.data(), filesize);
+    ifs.read(reinterpret_cast<char *>(data.data()), filesize);
 
     // 1. ----------------------------- initialize zonemap and build -----------------------------
     // build zonemap
@@ -57,19 +63,19 @@ int main(int argc, char **argv) {
         }
 
         // shuffle indexes
-        std::random_shuffle(queries.begin(), queries.end());
+        std::shuffle(queries.begin(), queries.end(), std::mt19937(std::random_device()()));
     }
-    auto stop_pq = std::chrono::high_resolution_clock::now();
-    auto duration_pq = std::chrono::duration_cast<std::chrono::microseconds>(stop_pq - start_pq);
-    unsigned long long point_query_time = duration_pq.count();
+    auto stop_pq = high_resolution_clock::now();
+    auto duration_pq = duration_cast<seconds>(stop_pq - start_pq);
+    auto point_query_time = duration_pq.count();
     std::cout << "Time taken to perform point queries from zonemap = " << point_query_time * 1.0 / kRuns
-              << " microseconds" << endl;
+              << " seconds" << endl;
 
     // 3. ----------------------------- range queries -----------------------------
     unsigned long long range_query_time = 0;
     // Your code starts here ...
 
     std::cout << "Time taken to perform range query from zonemap = " << range_query_time * 1.0 / kRuns
-              << " microseconds" << endl;
+              << " seconds" << endl;
     return 0;
 }
