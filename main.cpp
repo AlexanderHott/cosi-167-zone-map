@@ -1,12 +1,10 @@
 #include <algorithm>
 #include <chrono>
 #include <fstream>
-#include <functional>
 #include <iostream>
 #include <random>
 #include <vector>
 
-#include "zonemap.cpp"
 #include "zonemap.h"
 
 // Specify your path of workload file here

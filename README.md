@@ -1,5 +1,8 @@
 # COSI-167A: Advanced Data Systems - ZoneMaps [CPP]
 
+# Questions
+
+- [ ] are range query bounds inclusive or exclusive?
 
 ## About
 

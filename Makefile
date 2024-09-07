@@ -1,7 +1,13 @@
+CXX = g++
+CFLAGS = -Wall -g -std=c++17
+
+
 all: main
+.PHONY: all
 
-main: main.cpp zonemap.cpp 
-	g++ -g -std=c++11 -o $@ $^
+main: main.cpp zonemap.h
+	$(CXX) $(CFLAGS) -o $@ $^
 
-clear: 
-	rm main
+clean:
+	rm -rf main
+.PHONY: clean
