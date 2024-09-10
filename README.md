@@ -2,7 +2,8 @@
 
 # Questions
 
-- [ ] are range query bounds inclusive or exclusive?
+- [x] are range query bounds inclusive or exclusive?
+  - either are fine as long as it is documented
 
 ## About
 

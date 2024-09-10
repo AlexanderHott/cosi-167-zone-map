@@ -1,3 +1,6 @@
+/**
+ * Implementation done in header file because generic classes cannot be implemented in .cpp files.
+ */
 #pragma once
 
 #include <algorithm>
@@ -68,7 +71,6 @@ public:
 
     /** Returns all the occurrences of keys in the `zonemap` between `low` and `high` (inclusive). */
     std::vector<T> query(T low, T high) {
-        // TODO: check inclusive/exclusive bounds for range queries
         std::vector<T> results;
         for (auto zone: zones) {
             if (low > zone.max || high < zone.min) {
