@@ -4,9 +4,10 @@
 #pragma once
 
 #include <algorithm>
+#include <vector>
+
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 
 template<typename T>
@@ -31,7 +32,7 @@ class zonemap {
     std::vector<zone<T>> zones;
 
 public:
-    /** Constructs a zonemap. The zonemap is not valid until `build` is called.
+    /** Constructs a zonemap, copying from `elements`. The zonemap is not valid until `build` is called.
      *
      * @param elements Elements to construct the `zonemap` over.
      * @param num_elements_per_zone Number of elements per `zone`.
@@ -45,15 +46,17 @@ public:
         zones.clear();
         for (size_t i = 0; i < elements.size(); i += num_elements_per_zone) {
             std::vector<T> zoneElements(elements.begin() + i, elements.begin() + i + num_elements_per_zone);
-            auto min = *std::min_element(zoneElements.begin(), zoneElements.end());
-            auto max = *std::max_element(zoneElements.begin(), zoneElements.end());
 
-            zone<T> zone{zoneElements, min, max, false};
+            // Doing this in one pass with our own implementation might be faster than the two std implementations
+            auto [min, max] = std::minmax_element(zoneElements.begin(), zoneElements.end());
+            bool sorted = std::is_sorted(zoneElements.begin(), zoneElements.end());
+
+            zone<T> zone{std::move(zoneElements), *min, *max, sorted};
             zones.push_back(zone);
         }
     }
 
-    /** Sorts elements. Invalidates the zonemap, so you must call `build` before querying. */
+    /** Sorts elements. This invalidates the zonemap, so you must call `build` before querying. */
     void sort_elements() { std::sort(elements.begin(), elements.end()); }
 
     /** Returns the number of occurrences of `key` in the `zonemap` */
@@ -61,24 +64,31 @@ public:
         size_t total = 0;
         for (auto zone: zones) {
             if (key >= zone.min && key <= zone.max) {
-                // TODO: check if the zone is sorted and do a binary search
-                total += std::count(zone.elements.begin(), zone.elements.end(), key);
+                if (zone.sorted) {
+                    auto range = std::equal_range(zone.elements.begin(), zone.elements.end(), key);
+                    total += std::distance(range.first, range.second);
+                } else {
+                    total += std::count(zone.elements.begin(), zone.elements.end(), key);
+                }
             }
         }
         return total;
     }
 
-
     /** Returns all the occurrences of keys in the `zonemap` between `low` and `high` (inclusive). */
     std::vector<T> query(T low, T high) {
         std::vector<T> results;
         for (auto zone: zones) {
-            if (low > zone.max || high < zone.min) {
-                continue;
-            }
-            // TODO: check if the zone is sorted and use `std::find_if`
-            std::copy_if(zone.elements.begin(), zone.elements.end(), std::back_inserter(results),
+            if (low >= zone.min && high <= zone.max) {
+                if (zone.sorted) {
+                    auto low_bound = std::lower_bound(zone.elements.begin(), zone.elements.end(), low);
+                    auto high_bound = std::upper_bound(zone.elements.begin(), zone.elements.end(), high);
+                    std::copy(low_bound, high_bound, std::back_inserter(results));
+                } else {
+                    std::copy_if(zone.elements.begin(), zone.elements.end(), std::back_inserter(results),
                          [low, high](T key) { return key >= low && key <= high; });
+                }
+            }
         }
         return results;
     }
