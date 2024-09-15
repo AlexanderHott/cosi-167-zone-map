@@ -5,7 +5,7 @@ CFLAGS = -Wall -g -std=c++17
 all: main
 .PHONY: all
 
-main: main.cpp zonemap.h
+main: main.cpp
 	$(CXX) $(CFLAGS) -o $@ $^
 
 clean:

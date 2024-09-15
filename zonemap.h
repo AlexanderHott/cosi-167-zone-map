@@ -17,8 +17,6 @@ struct zone {
     T min;
     /** Maximum element in the `zone` */
     T max;
-    /** Whether the `zone` is sorted */
-    bool sorted;
 };
 
 template<typename T>
@@ -29,6 +27,8 @@ class zonemap {
     std::vector<T> elements; // vector/list that will hold all elements. Can convert to array for faster processing
     /** `zone`s */
     std::vector<zone<T>> zones;
+    /** Whether the `zonemap` is sorted */
+    bool sorted = false;
 
 public:
     /** Constructs a zonemap. The zonemap is not valid until `build` is called.
@@ -48,21 +48,30 @@ public:
             auto min = *std::min_element(zoneElements.begin(), zoneElements.end());
             auto max = *std::max_element(zoneElements.begin(), zoneElements.end());
 
-            zone<T> zone{zoneElements, min, max, false};
+            zone<T> zone{zoneElements, min, max};
             zones.push_back(zone);
         }
     }
 
     /** Sorts elements. Invalidates the zonemap, so you must call `build` before querying. */
-    void sort_elements() { std::sort(elements.begin(), elements.end()); }
+    void sort_elements() {
+        std::sort(elements.begin(), elements.end());
+        sorted = true;
+    }
 
     /** Returns the number of occurrences of `key` in the `zonemap` */
     size_t query(T key) {
         size_t total = 0;
-        for (auto zone: zones) {
-            if (key >= zone.min && key <= zone.max) {
-                // TODO: check if the zone is sorted and do a binary search
-                total += std::count(zone.elements.begin(), zone.elements.end(), key);
+        if (sorted) {
+            for (zone<T> &zone: zones) {
+                auto range = std::equal_range(zone.elements.begin(), zone.elements.end(), key);
+                total += std::distance(range.first, range.second);
+            }
+        } else {
+            for (auto &zone: zones) {
+                if (key >= zone.min && key <= zone.max) {
+                    total += std::count(zone.elements.begin(), zone.elements.end(), key);
+                }
             }
         }
         return total;
@@ -72,13 +81,20 @@ public:
     /** Returns all the occurrences of keys in the `zonemap` between `low` and `high` (inclusive). */
     std::vector<T> query(T low, T high) {
         std::vector<T> results;
-        for (auto zone: zones) {
-            if (low > zone.max || high < zone.min) {
-                continue;
+        if (sorted) {
+            for (zone<T> &zone: zones) {
+                std::find_if(zone.elements.begin(), zone.elements.end(),
+                             [low, high](T key) { return key >= low && key <= high; });
             }
-            // TODO: check if the zone is sorted and use `std::find_if`
-            std::copy_if(zone.elements.begin(), zone.elements.end(), std::back_inserter(results),
-                         [low, high](T key) { return key >= low && key <= high; });
+        } else {
+            for (zone<T> &zone: zones) {
+                if (low > zone.max || high < zone.min) {
+                    continue;
+                }
+                // TODO: check if the zone is sorted and use `std::find_if`
+                std::copy_if(zone.elements.begin(), zone.elements.end(), std::back_inserter(results),
+                             [low, high](T key) { return key >= low && key <= high; });
+            }
         }
         return results;
     }
