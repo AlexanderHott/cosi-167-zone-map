@@ -1,5 +1,5 @@
 CXX = g++
-CFLAGS = -Wall -g -std=c++17
+CFLAGS = -Wall -g -std=c++20
 
 
 all: main

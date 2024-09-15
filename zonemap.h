@@ -6,8 +6,16 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <ranges>
+#include <span>
 #include <vector>
 
+template<typename T>
+using RangeVariant = std::variant<std::ranges::subrange<typename std::vector<T>::iterator>, // For sorted ranges
+                                  std::ranges::filter_view<std::ranges::ref_view<std::vector<T>>,
+                                                           std::function<bool(T)>> // For filtered views
+                                  >;
 
 template<typename T>
 struct zone {
@@ -35,7 +43,7 @@ public:
      *
      * @param elements Elements to construct the `zonemap` over.
      * @param num_elements_per_zone Number of elements per `zone`.
-     * @param sorted Whether Elements are
+     * @param sorted Whether `elements` is sorted
      */
     zonemap(std::vector<T> &&elements, const uint32_t num_elements_per_zone, bool sorted) :
         num_elements_per_zone(num_elements_per_zone), elements(std::move(elements)),
@@ -78,7 +86,7 @@ public:
 
 
     /** Returns all the occurrences of keys in the `zonemap` between `low` and `high` (inclusive). */
-    std::vector<T> query(T low, T high) {
+    auto query(T low, T high) {
         std::vector<T> results;
         for (auto &zone: zones) {
             if (low > zone.max || high < zone.min) {
@@ -89,11 +97,21 @@ public:
                 auto low_bound = std::lower_bound(zone.elements.begin(), zone.elements.end(), low);
                 auto high_bound = std::upper_bound(zone.elements.begin(), zone.elements.end(), high);
                 std::copy(low_bound, high_bound, std::back_inserter(results));
+                // auto low_bound = std::lower_bound(zone.elements.begin(), zone.elements.end(), low);
+                // auto high_bound = std::upper_bound(zone.elements.begin(), zone.elements.end(), high);
+                // if (low_bound != high_bound) {
+                //     results.push_back(std::ranges::subrange(low_bound, high_bound));
+                // }
             } else {
                 std::copy_if(zone.elements.begin(), zone.elements.end(), std::back_inserter(results),
                              [low, high](T key) { return key >= low && key <= high; });
+
+                // auto view = zone.elements |
+                //             std::ranges::views::filter([low, high](T key) { return low <= key && key <= high; });
+                // results.push_back(view);
             }
         }
+
         return results;
     }
 };
