@@ -31,39 +31,37 @@ class zonemap {
     bool sorted = false;
 
 public:
-    /** Constructs a zonemap. The zonemap is not valid until `build` is called.
+    /** Constructs a zonemap, moving from `elements`. The zonemap is not valid until `build` is called.
      *
      * @param elements Elements to construct the `zonemap` over.
      * @param num_elements_per_zone Number of elements per `zone`.
      */
-    zonemap(std::vector<T> elements, const uint32_t num_elements_per_zone) :
-        num_elements_per_zone(num_elements_per_zone), elements(elements),
+    zonemap(std::vector<T> &&elements, const uint32_t num_elements_per_zone) :
+        num_elements_per_zone(num_elements_per_zone), elements(std::move(elements)),
         zones(elements.size() / num_elements_per_zone) {}
+
 
     /** Builds the zonemap. */
     void build() {
         zones.clear();
+        zones.reserve(elements.size() / num_elements_per_zone);
+
         for (size_t i = 0; i < elements.size(); i += num_elements_per_zone) {
-            std::vector<T> zoneElements(elements.begin() + i, elements.begin() + i + num_elements_per_zone);
-            auto min = *std::min_element(zoneElements.begin(), zoneElements.end());
-            auto max = *std::max_element(zoneElements.begin(), zoneElements.end());
+            auto start = elements.begin() + i;
+            auto end = (i + num_elements_per_zone > elements.size()) ? elements.end() : start + num_elements_per_zone;
 
-            zone<T> zone{zoneElements, min, max};
-            zones.push_back(zone);
+            // Avoid copying elements, work directly with iterators
+            auto [min, max] = std::minmax_element(start, end);
+
+            zones.push_back({std::vector<T>(std::make_move_iterator(start), std::make_move_iterator(end)), *min, *max});
         }
-    }
-
-    /** Sorts elements. Invalidates the zonemap, so you must call `build` before querying. */
-    void sort_elements() {
-        std::sort(elements.begin(), elements.end());
-        sorted = true;
     }
 
     /** Returns the number of occurrences of `key` in the `zonemap` */
     size_t query(T key) {
         size_t total = 0;
         if (sorted) {
-            for (zone<T> &zone: zones) {
+            for (auto &zone: zones) {
                 auto range = std::equal_range(zone.elements.begin(), zone.elements.end(), key);
                 total += std::distance(range.first, range.second);
             }
@@ -81,17 +79,16 @@ public:
     /** Returns all the occurrences of keys in the `zonemap` between `low` and `high` (inclusive). */
     std::vector<T> query(T low, T high) {
         std::vector<T> results;
-        if (sorted) {
-            for (zone<T> &zone: zones) {
-                std::find_if(zone.elements.begin(), zone.elements.end(),
-                             [low, high](T key) { return key >= low && key <= high; });
+        for (auto &zone: zones) {
+            if (low > zone.max || high < zone.min) {
+                continue;
             }
-        } else {
-            for (zone<T> &zone: zones) {
-                if (low > zone.max || high < zone.min) {
-                    continue;
-                }
-                // TODO: check if the zone is sorted and use `std::find_if`
+
+            if (sorted) {
+                auto low_bound = std::lower_bound(zone.elements.begin(), zone.elements.end(), low);
+                auto high_bound = std::upper_bound(zone.elements.begin(), zone.elements.end(), high);
+                std::copy(low_bound, high_bound, std::back_inserter(results));
+            } else {
                 std::copy_if(zone.elements.begin(), zone.elements.end(), std::back_inserter(results),
                              [low, high](T key) { return key >= low && key <= high; });
             }
