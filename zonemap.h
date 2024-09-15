@@ -35,10 +35,11 @@ public:
      *
      * @param elements Elements to construct the `zonemap` over.
      * @param num_elements_per_zone Number of elements per `zone`.
+     * @param sorted Whether Elements are
      */
-    zonemap(std::vector<T> &&elements, const uint32_t num_elements_per_zone) :
+    zonemap(std::vector<T> &&elements, const uint32_t num_elements_per_zone, bool sorted) :
         num_elements_per_zone(num_elements_per_zone), elements(std::move(elements)),
-        zones(elements.size() / num_elements_per_zone) {}
+        zones(elements.size() / num_elements_per_zone), sorted(sorted) {}
 
 
     /** Builds the zonemap. */
