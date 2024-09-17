@@ -39,3 +39,17 @@ fill in the appropriate test call in the main.cpp file for the point/range queri
 
 > If you have any questions please feel free to see Subhadeep during office hours, or
 > email your queries at subhadeep@brandeis.edu.
+
+
+---
+
+# Python setup
+
+```bash
+python3 -V  # 3.12
+python3 -m venv .venv
+source .venv/bin/activate
+pip intsall -r requirements.txt
+
+python3 plot.py
+```

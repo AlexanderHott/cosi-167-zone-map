@@ -50,7 +50,7 @@ class Workload {
             queries.push_back(tmp);
         }
         // shuffle indexes
-        std::shuffle(queries.begin(), queries.end(), std::mt19937(std::random_device()()));
+        std::ranges::shuffle(queries, std::mt19937(std::random_device()()));
         return queries;
     }
 
@@ -63,6 +63,8 @@ class Workload {
         while (infile >> k1 >> comma >> k2) {
             queries.emplace_back(k1, k2);
         }
+
+        std::ranges::shuffle(queries, std::mt19937(std::random_device()()));
         return queries;
     }
 
@@ -76,15 +78,18 @@ public:
 
     WorkloadResults run() {
         const auto build_start = high_resolution_clock::now();
-        zonemap zones((std::move(data)), static_cast<uint32_t>(data.size()) / 100, sorted);
-        zones.build();
+        zonemap zmap((std::move(data)), static_cast<uint32_t>(data.size()) / 100, sorted);
+        zmap.build();
+        if (!sorted) {
+            zmap.sort_zones();
+        }
         const auto build_stop = high_resolution_clock::now();
         const auto build_duration = duration_cast<nanoseconds>(build_stop - build_start);
 
         const auto pq_start = high_resolution_clock::now();
         for (size_t r = 0; r < runs; r++) {
             for (const int key: pointQueries) {
-                zones.query(key);
+                zmap.query(key);
             }
 
             // shuffle indexes
@@ -98,7 +103,7 @@ public:
         const auto rq_start = high_resolution_clock::now();
         for (size_t r = 0; r < runs; r++) {
             for (auto [start, end]: rangeQueries) {
-                zones.query(start, end);
+                zmap.query(start, end);
             }
         }
         const auto rq_end = high_resolution_clock::now();
@@ -120,12 +125,12 @@ int main(int argc, char *argv[]) {
                      "./workloads/W2/range_queries.txt", 3, true),
             Workload("./workloads/W3/workload.dat", "./workloads/W3/point_queries.txt",
                      "./workloads/W3/range_queries.txt", 3, true),
-            // Workload("./workloads/W4/workload.dat", "./workloads/W4/point_queries.txt",
-            //          "./workloads/W4/range_queries.txt", 3, false),
-            // Workload("./workloads/W5/workload.dat", "./workloads/W5/point_queries.txt",
-            //          "./workloads/W5/range_queries.txt", 3, false),
-            // Workload("./workloads/W6/workload.dat", "./workloads/W6/point_queries.txt",
-            //          "./workloads/W6/range_queries.txt", 3, false),
+            Workload("./workloads/W4/workload.dat", "./workloads/W4/point_queries.txt",
+                     "./workloads/W4/range_queries.txt", 3, false),
+            Workload("./workloads/W5/workload.dat", "./workloads/W5/point_queries.txt",
+                     "./workloads/W5/range_queries.txt", 3, false),
+            Workload("./workloads/W6/workload.dat", "./workloads/W6/point_queries.txt",
+                     "./workloads/W6/range_queries.txt", 3, false),
     };
     for (auto workload: std::move(workloads)) {
         auto [build_time, pq_time, rq_time] = workload.run();

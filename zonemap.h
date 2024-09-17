@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <functional>
 #include <ranges>
-#include <span>
 #include <vector>
 
 template<typename T>
@@ -27,6 +26,7 @@ struct zone {
     T max;
 };
 
+/** An index that can answer containment questions about data. */
 template<typename T>
 class zonemap {
     /** Number of elements per `zone` */
@@ -35,8 +35,12 @@ class zonemap {
     std::vector<T> elements; // vector/list that will hold all elements. Can convert to array for faster processing
     /** `zone`s */
     std::vector<zone<T>> zones;
-    /** Whether the `zonemap` is sorted */
-    bool sorted = false;
+    /** Whether the `elements` in the `zone`s are sorted.
+     *
+     * If a `zone` is sorted, we can do a binary search over
+     * `elements` in order to find the key we are looking for.
+     */
+    bool sorted;
 
 public:
     /** Constructs a zonemap, moving from `elements`. The zonemap is not valid until `build` is called.
@@ -62,8 +66,20 @@ public:
             // Avoid copying elements, work directly with iterators
             auto [min, max] = std::minmax_element(start, end);
 
-            zones.push_back({std::vector<T>(std::make_move_iterator(start), std::make_move_iterator(end)), *min, *max});
+            zones.push_back(
+                    {std::vector<T>(std::make_move_iterator(start), std::make_move_iterator(end)), *min, *max});
         }
+    }
+
+    /** Sort the `zone`s in the `zonemap` */
+    void sort_zones() {
+        if (sorted)
+            return;
+
+        for (auto &zone: zones) {
+            std::sort(zone.elements.begin(), zone.elements.end());
+        }
+        sorted = true;
     }
 
     /** Returns the number of occurrences of `key` in the `zonemap` */
